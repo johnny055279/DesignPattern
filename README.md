@@ -1,6 +1,7 @@
 # DesignPattern
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
+- <a href="#SRP">Single Responsibility Principle</a>
 ## <a name="Singleton">Singleton Design Pattern</a>
 >定義: 單例對象的Class必須保證只有一個實例存在。
 
@@ -125,3 +126,138 @@ Singleton Design Pattern要注意的是，一旦建立實例之後就會一直�
 
 上述程式碼是用來讀取【儲存】資料，並使其可以共用，但是有些單例模式並不是設計用來讀取儲存資料，最常見到的就是DI注入的AddSingleton<Class>()
 當需要Class的時候，會給你一個singleton的Class，而Class中的方法並不需要是static。當第一位使用者因需要而建立一個實例之後，第二位使用者會繼續用同樣的實例。
+
+## <a name="SRP">Single Responsibility Principle</a>
+> 定義: 保持一個Class專注於單一功能點，意味著如果想要修改，只能有唯一的原因
+    
+光看描述似懂非懂的，不如實作一個:
+```
+Console.WriteLine("Welcome!");
+
+User user = new();
+
+Console.Write("What is your first name?");
+
+user.FirstName = Console.ReadLine();
+
+Console.Write("What is your last name?");
+
+user.LastName = Console.ReadLine();
+
+if (string.IsNullOrWhiteSpace(user.FirstName)){
+    Console.WriteLine("You don't give us a valid first name");
+    Console.ReadLine();
+    return;
+}
+
+if (string.IsNullOrWhiteSpace(user.LastName))
+{
+    Console.WriteLine("You don't give us a valid last name");
+    Console.ReadLine();
+    return;
+}
+
+Console.WriteLine($"Your name is {user.FirstName} {user.LastName}");
+Console.ReadLine();
+```
+很明顯地，上述範例做了三個功能:
+- 印出訊息
+- 輸入名字
+- 確認名字有效
+    
+無論今天要變更哪中功能的邏輯，都會修改到這一支程式碼。因此完全不符合單一職責的原則。我們必須針對這三種功能，將其提取出來，使其各別為一個小功能。
+```
+public class ShowMessage
+{
+    // 印出訊息的功能
+    public static void ShowWelcomeMessage()
+    {
+        Console.WriteLine("Welcome");
+    }
+
+    public static void ShowEndMessage()
+    {
+        Console.WriteLine("Press any button to exit.");
+        Console.ReadLine();
+    }
+
+    public static void ShowErrorMessage(string message)
+    {
+        Console.WriteLine($"You don't give us a valid {message}.");
+    }
+}
+```
+```
+public class UserDataCapture
+{
+    // 產生使用者
+    public static User GetUser()
+    {
+        User user = new();
+
+        Console.Write("What is your first name?");
+
+        user.FirstName = Console.ReadLine();
+
+        Console.Write("What is your last name?");
+
+        user.LastName = Console.ReadLine();
+
+        return user;
+    }
+}
+```
+```
+public class ValidateUserName
+{
+    // 驗證輸入資訊
+    public static bool Validate(User user)
+    {
+        if (string.IsNullOrWhiteSpace(user.FirstName))
+        {
+            ShowMessage.ShowErrorMessage("first name");
+
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(user.LastName))
+        {
+            ShowMessage.ShowErrorMessage("last name");
+
+            return false;
+        }
+
+        return true;
+    }
+}
+```
+```
+public class UserGenerate
+{
+    // 產生帳號
+    public static void CreateAccount(User user)
+    {
+        Console.WriteLine($"Your name is {user.FirstName} {user.LastName}");
+    }
+}
+```
+建立以上類別之後，我們主要的程式碼就變得很簡潔
+```
+ShowMessage.ShowWelcomeMessage();
+
+var user = UserDataCapture.GetUser();
+
+bool isValid = ValidateUserName.Validate(user);
+
+if (!isValid) {
+
+    ShowMessage.ShowEndMessage();
+
+    return;
+}
+
+UserGenerate.CreateAccount(user);
+
+ShowMessage.ShowEndMessage();
+```
+如此一來就保證每一個程式碼只能找到一種理由去改變它。
