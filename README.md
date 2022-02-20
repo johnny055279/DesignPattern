@@ -160,10 +160,11 @@ if (string.IsNullOrWhiteSpace(user.LastName))
 Console.WriteLine($"Your name is {user.FirstName} {user.LastName}");
 Console.ReadLine();
 ```
-很明顯地，上述範例做了三個功能:
+很明顯地，上述範例做了四個功能:
 - 印出訊息
 - 輸入名字
 - 確認名字有效
+- 創建帳號
     
 無論今天要變更哪中功能的邏輯，都會修改到這一支程式碼。因此完全不符合單一職責的原則。我們必須針對這三種功能，將其提取出來，使其各別為一個小功能。
 ```
