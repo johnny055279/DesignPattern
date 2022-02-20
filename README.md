@@ -1,5 +1,7 @@
 # DesignPattern
-## Singleton Design Pattern
+## 目錄:
+- <a href="#Singleton">Singleton Design Pattern</a>
+## <a name="Singleton">Singleton Design Pattern</a>
 >定義: 單例對象的Class必須保證只有一個實例存在。
 
 想像今天有一家餐廳，餐廳裡有三位服務生，每次客人需要服務時，都會按照順序出場。
