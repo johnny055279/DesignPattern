@@ -2,6 +2,8 @@
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
+- <a href="#LSP">Liskov Substitution Principle</a>
+
 ## <a name="Singleton">Singleton Design Pattern</a>
 >定義: 單例對象的Class必須保證只有一個實例存在。
 
@@ -262,3 +264,240 @@ UserGenerate.CreateAccount(user);
 ShowMessage.ShowEndMessage();
 ```
 如此一來就保證每一個程式碼只能找到一種理由去改變它。
+    
+## <a name="LSP">Liskov Substitution Principle</a>
+> 定義: 子類別在繼承父類別時，必須遵循父類別的設計
+    
+什麼意思呢? 先看一下一段程式碼:
+```
+Manager manager = new Manager();
+
+manager.FirstName = "Johnny";
+
+manager.LastName = "Wang";
+
+manager.CaculateSalary(4);
+
+Employee employee = new Employee();
+
+employee.FirstName = "David";
+
+employee.LastName = "Lin";
+
+employee.AssignManager(manager);
+
+employee.CaculateSalary(2);
+
+Console.WriteLine($"Name: {employee.FirstName} {employee.LastName}\nSalary: {employee.Salary}");
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();    
+```
+類別如下:
+```
+public class Employee
+{
+    public string FirstName { get; set; }
+
+    public string LastName { get; set; }
+
+    public Employee Manager { get; set; }
+
+    public decimal Salary { get; set; }
+
+    public virtual void AssignManager(Employee manager)
+    {
+        Manager = manager;
+    }
+
+    public virtual void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 100;
+
+        Salary = baseSalary + (rank * 2);
+
+    }
+}
+```
+```
+public class Manager : Employee
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 200;
+
+        Salary = baseSalary + (rank * 2);
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+}
+```
+```
+public class CEO : Employee
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 400;
+
+        Salary = baseSalary + rank;
+    }
+
+    public override void AssignManager(Employee manager)
+    {
+        throw new InvalidOperationException("The CEO have no manager!");
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+
+    public void FireSomeone(Employee employee)
+    {
+        Console.WriteLine($"Employee {employee.FirstName} {employee.LastName} have been fired by CEO!");
+    }
+}
+```
+LSP的意思就是如果今天把
+
+<code>Employee employee = new Employee();</code>
+    
+替換成
+    
+<code>Employee employee = new CEO();</code>
+    
+程式不會因為這樣而壞掉。很顯然的，以上這隻程式在執行到<code>employee.AssignManager(manager);</code>的時候，會因為CEO的方法而丟出一個Eception，所以它違反了LSP。
+    
+因此我們可以做以下的變動:
+- 將所有員工都會用到的變數及功能提取出來做成Interface
+
+```
+public interface IEmployee
+{
+    string FirstName { get; set; }
+    string LastName { get; set; }
+    decimal Salary { get; set; }
+    void CaculateSalary(int rank);
+}
+```
+- 將管理者具有的功能提取出來變成Interface，此Interface也必須繼承IEmployee
+
+```
+public interface IManager : IEmployee
+{
+    void GeneratePerformanceReview();
+}
+```
+- 將具有分配管理者的功能提取出來變成Interface，此Interface也必須繼承IEmployee
+
+```
+public interface IManaged : IEmployee
+{
+    IEmployee Manager { get; set; }
+
+    void AssignManager(IEmployee manager);
+}
+```
+- 創建一個基礎抽象類別，並繼承IEmployee
+
+```
+public abstract class BaseEmployee : IEmployee
+{
+    public string FirstName { get; set; }
+
+    public string LastName { get; set; }
+
+    public decimal Salary { get; set; }
+
+    public virtual void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 100;
+
+        Salary = baseSalary + (rank * 2);
+
+    }
+}
+```
+接下來就要開始修改類別了。
+
+首先是Employee: 員工必須繼承基礎類別才能得到一些基本的資訊，同時也必須繼承IManaged才能被分派管理者
+```
+public class Employee : BaseEmployee, IManaged
+{
+    public IEmployee Manager { get; set; }
+
+    public void AssignManager(IEmployee manager)
+    {
+        Manager = manager;
+    }
+}
+```
+接下來是Manager: 管理者可以被指定另一個管理者，同時也可以送出報告，因此要繼承Employee與IManager，不繼承IEmployee的原因是Employee已經繼承BaseEmployee，如果再繼承一次就要再重新實作裡面的內容。
+```
+public class Manager : Employee, IManager
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 200;
+
+        Salary = baseSalary + (rank * 2);
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+}
+```
+最後是CEO: 因為CEO並不能被指定管理者，因此這邊要繼承的是BaseEmployee以及IManager。
+    
+```
+public class CEO : BaseEmployee, IManager
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 400;
+
+        Salary = baseSalary + rank;
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+
+    public void FireSomeone(Employee employee)
+    {
+        Console.WriteLine($"Employee {employee.FirstName} {employee.LastName} have been fired by CEO!");
+    }
+}
+```
+
+所以因為各種層級繼承的東西不一樣，因此執行的程式碼會變的靈活而且不會出錯(因為出錯的時候會直接Compiler錯誤，而不是執行中錯誤)
+```
+IManager manager = new Manager();
+
+manager.FirstName = "Johnny";
+
+manager.LastName = "Wang";
+
+manager.CaculateSalary(4);
+
+BaseEmployee employee = new CEO();
+
+employee.FirstName = "David";
+
+employee.LastName = "Lin";
+
+employee.CaculateSalary(2);
+
+Console.WriteLine($"Name: {employee.FirstName} {employee.LastName}\nSalary: {employee.Salary}");
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
