@@ -2,6 +2,7 @@
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
+- <a href="#OCP">Open Closed Principle</a>
 - <a href="#LSP">Liskov Substitution Principle</a>
 
 ## <a name="Singleton">Singleton Design Pattern</a>
@@ -77,7 +78,7 @@ Console.WriteLine("End Serving...");
 public class TableServers
     {
         // 在取得TableServers的時候就建立實例
-        // 此種作法既能保證是執行續安全，而且只會在真正使用到實體時才建立
+        // 此種作法既能保證是執行緒安全，而且只會在真正使用到實體時才建立
         private static readonly TableServers instance = new();
         private List<string> servers = new();
         private int serverNum = 0;
@@ -264,7 +265,190 @@ UserGenerate.CreateAccount(user);
 ShowMessage.ShowEndMessage();
 ```
 如此一來就保證每一個程式碼只能找到一種理由去改變它。
+
+
+## <a name="OCP">Open Closed Principle</a>
+> 定義: 程式對於修改是封閉的，但是對於擴展是開放的
+
+這句話的意思是，對於已經上線的產品而言，任意地去修改現有的程式碼，有可能會導致你沒想到的錯誤發生。因此我們必須在不影響到現有的程式碼為前提進行擴充。
+下面有一段範例:
+
+```
+var users = new List<UserModel>
+{
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new UserModel{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+var accounts = new Accounts();
+
+foreach (var user in users)
+{
+    employees.Add(accounts.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+用到的類別:
+
+```
+public class UserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+}
+```
+```
+public class EmployeeModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string Email { get; set; }
+}
+```
+```
+public class Accounts
+{
+    public EmployeeModel Create(UserModel userModel)
+    {
+        EmployeeModel result = new();
+
+        result.FirstName = userModel.FirstName;
+
+        result.LastName = userModel.LastName;
+
+        result.Email = $"{userModel.FirstName}{userModel.LastName}@gmail.com";
+
+        return result;
+    }
+}
+```
+今天客戶說，我想要新增一個flag，來判斷User是不是Manager。以直觀來說，會想要直接在<code>new UserModel{FirstName = "Johnny", LastName = "Wang"},</code>上面直接加一個<code>IsManager: false</code>的屬性來判斷，而UserModel也加上<code>public bool IsManager { 0get; set; } = false</code>以及在Account class中的Create()加一個判斷是不是Manager的程式。
+那如果老闆又說，我要新增一個Super employee的flag，那是不是以上程式碼又要再改一次? 那麼是否能夠完全保證這些修改，對於程式運行是不影響的呢?
+因此，如果想要符合OCP，我們可以這樣做:
+- 建立一個UserModel的Interface並修改UserModel
+```
+public interface IUserModel
+{
+    string FirstName { get; set; }
+    string LastName { get; set; }
+    IAccounts Account { get; set; }
+}
     
+public class UserModel : IUserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public IAccounts Account { get; set; } = new Accounts();
+}
+```
+- 建立Accounts Interface
+```
+public interface IAccounts
+{
+    EmployeeModel Create(IUserModel userModel);
+}
+```
+如此一來，所有的IUserModel都會有Create可以用。
+執行的程式碼就會變成:
+```
+// 使用interface而不直接使用class
+var users = new List<IUserModel>
+{
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new UserModel{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+foreach (var user in users)
+{
+    // 藉由user就可以呼叫到create
+    employees.Add(user.Account.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+Ok，如果今天老闆說，我要一個Manager的標記，那我們就可以這樣做:
+- 新增一個ManagerAccount class，並繼承IAccounts實作
+```
+public class ManagerAccounts : IAccounts
+{
+    public EmployeeModel Create(IUserModel userModel)
+    {
+        EmployeeModel result = new();
+
+        result.FirstName = userModel.FirstName;
+
+        result.LastName = userModel.LastName;
+
+        result.Email = $"{userModel.FirstName}{userModel.LastName}@gmail.com";
+
+        // 是否為管理者加在這裡
+        result.IsManager = true;
+
+        return result;
+    }
+}
+```
+- 新增一個Manager class，並繼承IUserModel並實作
+```
+public class Manager : IUserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public IAccounts Account { get; set; } = new ManagerAccounts();
+}
+```
+最後的執行程式碼就會變成這樣:
+```
+var users = new List<IUserModel>
+{
+    // 想要什麼類型的使用者就自己加囉!
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new Manager{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+foreach (var user in users)
+{
+    // 藉由user就可以呼叫到create
+    employees.Add(user.Account.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}, IsManager? {employee.IsManager}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+如果今天老闆又說，我要加一個超級員工的標籤，這時候，只要再重複上述步驟，並在List裡面增加一筆資料就完成囉!
+
+備註: 的確，如果要新增這些功能，UserModel勢必也要增加屬性，但這是否違反了OCP原則? 我想OCP應該主要還是專注於邏輯上的修改，我想如果只是對於model上增加屬性，這種微小的變動應該還是可以接受的。
+
 ## <a name="LSP">Liskov Substitution Principle</a>
 > 定義: 子類別在繼承父類別時，必須遵循父類別的設計
     
