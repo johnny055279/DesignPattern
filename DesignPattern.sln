@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingletonDemo", "SingletonD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalResponsibilityPrincipleDemo", "SignalResponsibilityPrincipleDemo\SignalResponsibilityPrincipleDemo.csproj", "{A80AAA7B-9BF3-4279-8A6F-37EAFB68D0D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiskovSubstitutionPrincipleDemo", "LiskovSubstitutionPrincipleDemo\LiskovSubstitutionPrincipleDemo.csproj", "{52462A97-C9DD-421D-AE9D-E2D0940F1C71}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiskovSubstitutionPrincipleLibrary", "LiskovSubstitutionPrincipleLibrary\LiskovSubstitutionPrincipleLibrary.csproj", "{B0D0E8F2-9789-4299-A94A-AA0BA37BBDED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{A80AAA7B-9BF3-4279-8A6F-37EAFB68D0D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A80AAA7B-9BF3-4279-8A6F-37EAFB68D0D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A80AAA7B-9BF3-4279-8A6F-37EAFB68D0D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52462A97-C9DD-421D-AE9D-E2D0940F1C71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52462A97-C9DD-421D-AE9D-E2D0940F1C71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52462A97-C9DD-421D-AE9D-E2D0940F1C71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52462A97-C9DD-421D-AE9D-E2D0940F1C71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0D0E8F2-9789-4299-A94A-AA0BA37BBDED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0D0E8F2-9789-4299-A94A-AA0BA37BBDED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0D0E8F2-9789-4299-A94A-AA0BA37BBDED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0D0E8F2-9789-4299-A94A-AA0BA37BBDED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
