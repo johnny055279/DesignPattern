@@ -2,6 +2,9 @@
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
+- <a href="#OCP">Open Closed Principle</a>
+- <a href="#LSP">Liskov Substitution Principle</a>
+
 ## <a name="Singleton">Singleton Design Pattern</a>
 >定義: 單例對象的Class必須保證只有一個實例存在。
 
@@ -75,7 +78,7 @@ Console.WriteLine("End Serving...");
 public class TableServers
     {
         // 在取得TableServers的時候就建立實例
-        // 此種作法既能保證是執行續安全，而且只會在真正使用到實體時才建立
+        // 此種作法既能保證是執行緒安全，而且只會在真正使用到實體時才建立
         private static readonly TableServers instance = new();
         private List<string> servers = new();
         private int serverNum = 0;
@@ -160,12 +163,13 @@ if (string.IsNullOrWhiteSpace(user.LastName))
 Console.WriteLine($"Your name is {user.FirstName} {user.LastName}");
 Console.ReadLine();
 ```
-很明顯地，上述範例做了三個功能:
+很明顯地，上述範例做了四個功能:
 - 印出訊息
 - 輸入名字
 - 確認名字有效
+- 創建帳號
     
-無論今天要變更哪中功能的邏輯，都會修改到這一支程式碼。因此完全不符合單一職責的原則。我們必須針對這三種功能，將其提取出來，使其各別為一個小功能。
+無論今天要變更哪種功能的邏輯，都會修改到這一支程式碼。因此完全不符合單一職責的原則。我們必須針對這四種功能，將其提取出來，使其各別為一個小功能。
 ```
 public class ShowMessage
 {
@@ -261,3 +265,423 @@ UserGenerate.CreateAccount(user);
 ShowMessage.ShowEndMessage();
 ```
 如此一來就保證每一個程式碼只能找到一種理由去改變它。
+
+
+## <a name="OCP">Open Closed Principle</a>
+> 定義: 程式對於修改是封閉的，但是對於擴展是開放的
+
+這句話的意思是，對於已經上線的產品而言，任意地去修改現有的程式碼，有可能會導致你沒想到的錯誤發生。因此我們必須在不影響到現有的程式碼為前提進行擴充。
+下面有一段範例:
+
+```
+var users = new List<UserModel>
+{
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new UserModel{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+var accounts = new Accounts();
+
+foreach (var user in users)
+{
+    employees.Add(accounts.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+用到的類別:
+
+```
+public class UserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+}
+```
+```
+public class EmployeeModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string Email { get; set; }
+}
+```
+```
+public class Accounts
+{
+    public EmployeeModel Create(UserModel userModel)
+    {
+        EmployeeModel result = new();
+
+        result.FirstName = userModel.FirstName;
+
+        result.LastName = userModel.LastName;
+
+        result.Email = $"{userModel.FirstName}{userModel.LastName}@gmail.com";
+
+        return result;
+    }
+}
+```
+今天客戶說，我想要新增一個flag，來判斷User是不是Manager。以直觀來說，會想要直接在<code>new UserModel{FirstName = "Johnny", LastName = "Wang"},</code>上面直接加一個<code>IsManager: false</code>的屬性來判斷，而UserModel也加上<code>public bool IsManager { 0get; set; } = false</code>以及在Account class中的Create()加一個判斷是不是Manager的程式。
+那如果老闆又說，我要新增一個Super employee的flag，那是不是以上程式碼又要再改一次? 那麼是否能夠完全保證這些修改，對於程式運行是不影響的呢?
+因此，如果想要符合OCP，我們可以這樣做:
+- 建立一個UserModel的Interface並修改UserModel
+```
+public interface IUserModel
+{
+    string FirstName { get; set; }
+    string LastName { get; set; }
+    IAccounts Account { get; set; }
+}
+    
+public class UserModel : IUserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public IAccounts Account { get; set; } = new Accounts();
+}
+```
+- 建立Accounts Interface
+```
+public interface IAccounts
+{
+    EmployeeModel Create(IUserModel userModel);
+}
+```
+如此一來，所有的IUserModel都會有Create可以用。
+執行的程式碼就會變成:
+```
+// 使用interface而不直接使用class
+var users = new List<IUserModel>
+{
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new UserModel{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+foreach (var user in users)
+{
+    // 藉由user就可以呼叫到create
+    employees.Add(user.Account.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+Ok，如果今天老闆說，我要一個Manager的標記，那我們就可以這樣做:
+- 新增一個ManagerAccount class，並繼承IAccounts實作
+```
+public class ManagerAccounts : IAccounts
+{
+    public EmployeeModel Create(IUserModel userModel)
+    {
+        EmployeeModel result = new();
+
+        result.FirstName = userModel.FirstName;
+
+        result.LastName = userModel.LastName;
+
+        result.Email = $"{userModel.FirstName}{userModel.LastName}@gmail.com";
+
+        // 是否為管理者加在這裡
+        result.IsManager = true;
+
+        return result;
+    }
+}
+```
+- 新增一個Manager class，並繼承IUserModel並實作
+```
+public class Manager : IUserModel
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public IAccounts Account { get; set; } = new ManagerAccounts();
+}
+```
+最後的執行程式碼就會變成這樣:
+```
+var users = new List<IUserModel>
+{
+    // 想要什麼類型的使用者就自己加囉!
+    new UserModel{FirstName = "Johnny", LastName = "Wang"},
+    new Manager{FirstName = "Mary", LastName = "Cheng"},
+    new UserModel {FirstName = "Jack", LastName = "Du"}
+};
+
+var employees = new List<EmployeeModel>();
+
+foreach (var user in users)
+{
+    // 藉由user就可以呼叫到create
+    employees.Add(user.Account.Create(user));
+}
+
+foreach (var employee in employees)
+{
+   Console.WriteLine($"{employee.FirstName} {employee.LastName} email address: {employee.Email}, IsManager? {employee.IsManager}");
+}
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
+如果今天老闆又說，我要加一個超級員工的標籤，這時候，只要再重複上述步驟，並在List裡面增加一筆資料就完成囉!
+
+備註: 的確，如果要新增這些功能，UserModel勢必也要增加屬性，但這是否違反了OCP原則? 我想OCP應該主要還是專注於邏輯上的修改，我想如果只是對於model上增加屬性，這種微小的變動應該還是可以接受的。
+
+## <a name="LSP">Liskov Substitution Principle</a>
+> 定義: 子類別在繼承父類別時，必須遵循父類別的設計
+    
+什麼意思呢? 先看一下一段程式碼:
+```
+Manager manager = new Manager();
+
+manager.FirstName = "Johnny";
+
+manager.LastName = "Wang";
+
+manager.CaculateSalary(4);
+
+Employee employee = new Employee();
+
+employee.FirstName = "David";
+
+employee.LastName = "Lin";
+
+employee.AssignManager(manager);
+
+employee.CaculateSalary(2);
+
+Console.WriteLine($"Name: {employee.FirstName} {employee.LastName}\nSalary: {employee.Salary}");
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();    
+```
+類別如下:
+```
+public class Employee
+{
+    public string FirstName { get; set; }
+
+    public string LastName { get; set; }
+
+    public Employee Manager { get; set; }
+
+    public decimal Salary { get; set; }
+
+    public virtual void AssignManager(Employee manager)
+    {
+        Manager = manager;
+    }
+
+    public virtual void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 100;
+
+        Salary = baseSalary + (rank * 2);
+
+    }
+}
+```
+```
+public class Manager : Employee
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 200;
+
+        Salary = baseSalary + (rank * 2);
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+}
+```
+```
+public class CEO : Employee
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 400;
+
+        Salary = baseSalary + rank;
+    }
+
+    public override void AssignManager(Employee manager)
+    {
+        throw new InvalidOperationException("The CEO have no manager!");
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+
+    public void FireSomeone(Employee employee)
+    {
+        Console.WriteLine($"Employee {employee.FirstName} {employee.LastName} have been fired by CEO!");
+    }
+}
+```
+LSP的意思就是如果今天把
+
+<code>Employee employee = new Employee();</code>
+    
+替換成
+    
+<code>Employee employee = new CEO();</code>
+    
+程式不會因為這樣而壞掉。很顯然的，以上這隻程式在執行到<code>employee.AssignManager(manager);</code>的時候，會因為CEO的方法而丟出一個Eception，所以它違反了LSP。
+    
+因此我們可以做以下的變動:
+- 將所有員工都會用到的變數及功能提取出來做成Interface
+
+```
+public interface IEmployee
+{
+    string FirstName { get; set; }
+    string LastName { get; set; }
+    decimal Salary { get; set; }
+    void CaculateSalary(int rank);
+}
+```
+- 將管理者具有的功能提取出來變成Interface，此Interface也必須繼承IEmployee
+
+```
+public interface IManager : IEmployee
+{
+    void GeneratePerformanceReview();
+}
+```
+- 將具有分配管理者的功能提取出來變成Interface，此Interface也必須繼承IEmployee
+
+```
+public interface IManaged : IEmployee
+{
+    IEmployee Manager { get; set; }
+
+    void AssignManager(IEmployee manager);
+}
+```
+- 創建一個基礎抽象類別，並繼承IEmployee
+
+```
+public abstract class BaseEmployee : IEmployee
+{
+    public string FirstName { get; set; }
+
+    public string LastName { get; set; }
+
+    public decimal Salary { get; set; }
+
+    public virtual void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 100;
+
+        Salary = baseSalary + (rank * 2);
+
+    }
+}
+```
+接下來就要開始修改類別了。
+
+首先是Employee: 員工必須繼承基礎類別才能得到一些基本的資訊，同時也必須繼承IManaged才能被分派管理者
+```
+public class Employee : BaseEmployee, IManaged
+{
+    public IEmployee Manager { get; set; }
+
+    public void AssignManager(IEmployee manager)
+    {
+        Manager = manager;
+    }
+}
+```
+接下來是Manager: 管理者可以被指定另一個管理者，同時也可以送出報告，因此要繼承Employee與IManager，不繼承IEmployee的原因是Employee已經繼承BaseEmployee，如果再繼承一次就要再重新實作裡面的內容。
+```
+public class Manager : Employee, IManager
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 200;
+
+        Salary = baseSalary + (rank * 2);
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+}
+```
+最後是CEO: 因為CEO並不能被指定管理者，因此這邊要繼承的是BaseEmployee以及IManager。
+    
+```
+public class CEO : BaseEmployee, IManager
+{
+    public override void CaculateSalary(int rank)
+    {
+        decimal baseSalary = 400;
+
+        Salary = baseSalary + rank;
+    }
+
+    public void GeneratePerformanceReview()
+    {
+        Console.WriteLine("Performance report Generated.");
+    }
+
+    public void FireSomeone(Employee employee)
+    {
+        Console.WriteLine($"Employee {employee.FirstName} {employee.LastName} have been fired by CEO!");
+    }
+}
+```
+
+所以因為各種層級繼承的東西不一樣，因此執行的程式碼會變的靈活而且不會出錯(因為出錯的時候會直接Compiler錯誤，而不是執行中錯誤)
+```
+IManager manager = new Manager();
+
+manager.FirstName = "Johnny";
+
+manager.LastName = "Wang";
+
+manager.CaculateSalary(4);
+
+BaseEmployee employee = new CEO();
+
+employee.FirstName = "David";
+
+employee.LastName = "Lin";
+
+employee.CaculateSalary(2);
+
+Console.WriteLine($"Name: {employee.FirstName} {employee.LastName}\nSalary: {employee.Salary}");
+
+Console.WriteLine("Press any key to exit");
+
+Console.ReadLine();
+```
