@@ -1,4 +1,7 @@
 # DesignPattern 筆記
+
+[![hackmd-github-sync-badge](https://hackmd.io/T6NMLJr_SjC2jxDvzV5Fgg/badge)](https://hackmd.io/T6NMLJr_SjC2jxDvzV5Fgg)
+
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
