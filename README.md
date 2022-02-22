@@ -1,4 +1,4 @@
-# DesignPattern
+# DesignPattern 筆記
 ## 目錄:
 - <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
@@ -686,10 +686,16 @@ Console.WriteLine("Press any key to exit");
 Console.ReadLine();
 ```
 有關於override的原則:
+    
 - Precondition 先決條件
+    
 簡單的來說子類別在覆寫父類別的時候，必須遵循父類別既有的規則。
 例如父類別傳入的參數必須大於10、小於50，則在子類別中不能超出此一範圍進行override，以免出現超出預期的錯誤。
+
 - Postconditions 後置條件
+    
 指在執行一段代碼後必須成立的條件，例如父類別回傳的必須是int，子類別也必須回傳一樣的型別與變數，但是可以多指定其他的變數為這個結果。
+    
 - Invariants 不變條件
+    
 在程序執行過程或部分過程中，可始終被假定成立的條件，子類別也必須維持一致。
