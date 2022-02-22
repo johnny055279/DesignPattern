@@ -30,8 +30,6 @@ namespace FactoryMethodPatternDemo
             this.Price = price;
         }
 
-  
-
         public void Discripe()
         {
             Console.WriteLine($"I an a car of {Type}. cost ${Price}");

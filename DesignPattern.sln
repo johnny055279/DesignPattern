@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiskovSubstitutionPrinciple
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FactoryMethodPatternDemo", "FactoryMethodPatternDemo\FactoryMethodPatternDemo.csproj", "{D366A463-4136-484E-AF29-72E228FBF148}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AbstractFactoryDemo", "AbstractFactoryDemo\AbstractFactoryDemo.csproj", "{4749C9AD-B3AC-406C-86C2-40B460C784D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{D366A463-4136-484E-AF29-72E228FBF148}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D366A463-4136-484E-AF29-72E228FBF148}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D366A463-4136-484E-AF29-72E228FBF148}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4749C9AD-B3AC-406C-86C2-40B460C784D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4749C9AD-B3AC-406C-86C2-40B460C784D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4749C9AD-B3AC-406C-86C2-40B460C784D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4749C9AD-B3AC-406C-86C2-40B460C784D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
