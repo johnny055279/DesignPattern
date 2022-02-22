@@ -210,7 +210,7 @@ car2.Discripe();
 ```
 > 藉由工廠方法，只有在我們調用的時候才決定我們想要什麼產品狀態。無論如何設定，都會返回我們想要的產品。
 
-## <a name="#AbsFac">Abstract Factory Pattern</a>
+## <a name="AbsFac">Abstract Factory Pattern</a>
 
 > 抽象工廠是一種創建設計模式，它允許生成相關對象的系列，而無需指定它們的具體類。
     
