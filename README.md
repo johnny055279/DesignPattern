@@ -3,10 +3,12 @@
 [![hackmd-github-sync-badge](https://hackmd.io/T6NMLJr_SjC2jxDvzV5Fgg/badge)](https://hackmd.io/T6NMLJr_SjC2jxDvzV5Fgg)
 
 ## 目錄:
-- <a href="#Singleton">Singleton Design Pattern</a>
 - <a href="#SRP">Single Responsibility Principle</a>
 - <a href="#OCP">Open Closed Principle</a>
 - <a href="#LSP">Liskov Substitution Principle</a>
+- <a href="#Singleton">Singleton Design Pattern</a>
+- <a href="#Factory">Factory Method Pattern</a>
+- <a href="#AbsFac">Abstract Factory Pattern</a>
 
 ## <a name="Singleton">Singleton Design Pattern</a>
 >定義: 單例對象的Class必須保證只有一個實例存在。
@@ -132,7 +134,247 @@ Singleton Design Pattern要注意的是，一旦建立實例之後就會一直�
 
 上述程式碼是用來讀取【儲存】資料，並使其可以共用，但是有些單例模式並不是設計用來讀取儲存資料，最常見到的就是DI注入的AddSingleton<Class>()
 當需要Class的時候，會給你一個singleton的Class，而Class中的方法並不需要是static。當第一位使用者因需要而建立一個實例之後，第二位使用者會繼續用同樣的實例。
+    
+## <a name="Factory">Factory Method Pattern</a>
+> 定義: 建立一個用於建立物品的介面，讓子類決定實體化哪一個類別。
+    
+意思就是，今天使用者向工廠申請一個特定產品的製造，而工廠負責製造使用者想要的產品，但其中的過程即便使用者不知道，還是可以得到他想要的東西。
 
+如何實作呢？
+    
+首先，建立一個產品的interface，與工廠的interface，各自定義出所有產品與所有工廠共同需要的方法：
+
+```
+public interface IProduct
+{
+    public void Discripe();
+}
+
+public interface IFactory
+{
+    public IProduct MakeProduct();
+}
+```
+接著就是創建特定產品的類別以及工廠：
+```
+public class Car : IProduct
+{
+    string type = "unknown";
+
+    public Car() { }
+
+    public Car(string type)
+    {
+        this.type = type;
+    }
+
+    public void Discripe()
+    {
+        Console.WriteLine($"I an a car of {type}");
+    }
+}
+```
+```
+public class CarFactory : IFactory
+{
+    public IProduct MakeProduct()
+    {
+        return new Car();
+    }
+    
+    // 滿足特定需求可以用多載
+    public IProduct MakeProduct(string type)
+    {
+        return new Car(type);
+    }
+}
+```
+於是在我們執行程式的時候，就可以根據使用者特定的需求，去創建不同的產品實體。
+```
+// 建立工廠實體
+CarFactory carfactory = new CarFactory();
+
+Console.WriteLine("Start making default car...");
+
+// 產品由工廠產出
+IProduct car1 = carfactory.MakeProduct();
+
+// 取得產品的內容
+car1.Discripe();
+
+Console.WriteLine("Start making BMW car...");
+
+IProduct car2 = carfactory.MakeProduct("BMW");
+
+car2.Discripe();
+```
+> 藉由工廠方法，只有在我們調用的時候才決定我們想要什麼產品狀態。無論如何設定，都會返回我們想要的產品。
+
+## <a name="SRP">Abstract Factory Pattern</a>
+
+> 抽象工廠是一種創建設計模式，它允許生成相關對象的系列，而無需指定它們的具體類。
+    
+定義總是這麼文鄒鄒，簡單的來說如果<a href="#SRP">Abstract Factory Pattern</a>是注重在「產品」的產出，那麼抽象工廠著重在同一系列產品的生成方法。
+工廠方法，你可以生產食物、汽車、零件...等等。但是一但生產的東西參數一多，就變得比較難以維護，因此孕育而生的有了抽象工廠。
+    
+抽象工廠方法則是在更深入的探討產品的一些特性，例如今天要做汽車，參數可能有座位、輪胎、引擎...等等。工廠就可以根據這些參數去實作。
+
+接著就來看看程式碼吧！
+    
+以汽車為例，假設我們只需要門跟輪子，所以必須先建構這兩個元素的Interface。
+
+```
+public interface IWheel
+{
+    public int number { get; set; }
+
+    public string Type { get; set; }
+
+    public void Discribe();
+}
+    
+public interface IDoor
+{
+    public int Number { get; set; }
+
+    public string Color { get; set; }
+
+    public void Discribe();
+}
+```
+之後新增兩個類別分別去繼承以上的Interface
+```
+public class Wheel : IWheel
+{
+    public int number { get; set; }
+
+    public string Type { get; set; }
+
+    public void Discribe()
+    {
+        Console.WriteLine($"Wheel number: {number}, Type: {Type}");
+    }
+}
+    
+public class Door : IDoor
+{
+    public int Number { get; set; }
+
+    public string Color { get; set; }
+
+    public void Discribe()
+    {
+        Console.WriteLine($"Door number: {Number} with {Color} Color");
+    }
+}
+```
+    
+再來就是創建一個抽象的工廠類別(基底)，裡面會有抽象的方法可以提供之後特定的工廠去做覆寫。
+
+```
+public abstract class CarFactory
+{
+    public abstract IDoor GetDoor(int doorNumber, string doorColor);
+
+    public abstract IWheel GetWheel(int wheelNumber);
+}
+```
+之後就是根據你要的工廠，去繼承那個抽象工廠，並且覆寫裡面的內容，改成你要的東西。
+
+```
+// 我專門做BMW
+public class BMWFactory : CarFactory
+{
+    public override IDoor GetDoor(int doorNumber, string doorColor)
+    {
+        IDoor door = new Door();
+
+        door.Number = doorNumber;
+
+        door.Color = doorColor;
+
+        return door;
+    }
+
+    public override IWheel GetWheel(int wheelNumber)
+    {
+        IWheel wheel = new Wheel();
+
+        wheel.number = wheelNumber;
+
+        wheel.Type = "BMW";
+
+        return wheel;
+    }
+}
+```
+    
+```
+// 我專門做Subaru
+public class SubaruFactory : CarFactory
+{
+    public override IDoor GetDoor(int doorNumber, string doorColor)
+    {
+        IDoor door = new Door();
+
+        door.Number = doorNumber;
+
+        door.Color = doorColor;
+
+        return door;
+    }
+
+    public override IWheel GetWheel(int wheelNumber)
+    {
+        IWheel wheel = new Wheel();
+
+        wheel.number = wheelNumber;
+
+        wheel.Type = "Subaru";
+
+        return wheel;
+    }
+}
+```
+如此一來就大功告成囉！想要做什麼類型的汽車，把參數丟給特定工廠就可以做出來囉！
+
+```
+var BMWFactory = new BMWFactory();
+
+Console.WriteLine($"Satrt creating BMW...");
+
+CreateCar(BMWFactory, 4, "red", 4);
+
+Console.WriteLine("finish!");
+
+Console.WriteLine(" ");
+
+var subaruFactory = new SubaruFactory();
+
+Console.WriteLine($"Satrt creating Subaru...");
+
+CreateCar(subaruFactory, 2, "blue", 4);
+
+Console.WriteLine("finish!");
+
+// 呼叫做出汽車的方法
+void CreateCar(CarFactory carFactory, int doorNumber, string doorColor, int wheelNumber)
+{
+    var door = carFactory.GetDoor(doorNumber, doorColor);
+
+    var wheel = carFactory.GetWheel(wheelNumber);
+
+    Console.WriteLine("-------");
+
+    door.Discribe();
+
+    wheel.Discribe();
+
+    Console.WriteLine("-------");
+
+}
+```
+    
 ## <a name="SRP">Single Responsibility Principle</a>
 > 定義: 保持一個Class專注於單一功能點，意味著如果想要修改，只能有唯一的原因
     
